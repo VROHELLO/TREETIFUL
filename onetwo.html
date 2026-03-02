@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TREENITY: Tree Inventory</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+:root {
+  --sage: #779a51;
+  --sage-dark: #688255;
+  --gold: #c9a44c;
+}
+
+body {
+  margin: 0;
+  font-family: "Times New Roman", serif;
+  background-color: rgba(100, 175, 75, 0.532);
+}
+
+h1 {
+  background: linear-gradient(135deg, var(--sage), var(--sage-dark));
+  color: #1c542b;
+  padding: 30px;
+  margin: 0;
+  text-align: center;
+  border-bottom: 7px solid var(--gold);
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 15px;
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.green { border-left: 6px solid #4CAF50; }
+.yellow { border-left: 6px solid #FFC107; }
+.orange { border-left: 6px solid #c78d10; }
+.red { border-left: 6px solid #F44336; }
+
+.filters {
+  display: flex;
+  gap: 10px;
+  padding: 0 20px;
+}
+
+.filters input, .filters select {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.inventory-list {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 15px;
+}
+
+/* Side Menu */
+#sideMenu {
+  position: fixed;
+  top: 0;
+  left: -260px;
+  width: 260px;
+  height: 100%;
+  background: linear-gradient(135deg, var(--sage), var(--sage-dark));
+  color: white;
+  padding: 20px;
+  transition: left 0.4s ease;
+  z-index: 9999;
+}
+
+#sideMenu.open { left: 0; }
+
+.menu-item {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: white;
+  text-align: left;
+  padding: 12px 0;
+  font-size: 16px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.menu-item:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+#menuBtn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 55px;
+  height: 55px;
+  font-size: 28px;
+  background: #779a51;
+  color: #c9a44c;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  z-index: 10000;
+}
+
+.inventory-card {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+</head>
+
+<body>
+
+<button id="menuBtn">☰</button>
+
+<div id="sideMenu">
+  <h3>🌿 Menu 🌿</h3>
+
+  <a href="oneprac.html" class="menu-item">
+    🏠 Back to Home Page
+  </a>
+
+  <button class="menu-item" onclick="scrollToMap()">
+    📍 Go to Map View
+  </button>
+</div>
+
+<h1> 🌱 Treenity: Tree Inventory 🌱</h1>
+
+<section class="summary">
+  <div class="card">🌲 <span id="totalTrees">0</span><br>Total Trees</div>
+  <div class="card green">💚 <span id="healthy">0</span><br>Healthy</div>
+  <div class="card yellow">⚠️ <span id="fair">0</span><br>Fair</div>
+  <div class="card orange">🟠 <span id="poor">0</span><br>Poor</div>
+  <div class="card red">💔 <span id="damaged">0</span><br>Damaged</div>
+</section>
+
+<input type="text" id="searchInput" placeholder="Search tree type...">
+
+<section class="filters">
+  <select id="conditionFilter">
+    <option value="">All Conditions</option>
+    <option value="Healthy">Healthy</option>
+    <option value="Fair">Fair</option>
+    <option value="Poor">Poor</option>
+    <option value="Damaged">Damaged</option>
+  </select>
+</section>
+
+<section id="inventoryList" class="inventory-list">
+
+  <!-- GOOGLE SHEETS HYPERLINK INSIDE PAGE -->
+  <div class="inventory-card" style="text-align:center; font-weight:bold;">
+    📄 View Full Tree Inventory in Google Sheets <br><br>
+    <a href="https://docs.google.com/spreadsheets/d/1yrnzUQ2VP4UCu4ta4n1iByLF4AhsAhU3X2MXfeCOFJA/edit?usp=sharing" 
+       target="_blank"
+       style="color:#779a51; text-decoration:underline;">
+       Click Here to Open Sheet
+    </a>
+  </div>
+
+</section>
+
+<script>
+const menuBtn = document.getElementById("menuBtn");
+const sideMenu = document.getElementById("sideMenu");
+
+menuBtn.addEventListener("click", () => {
+  sideMenu.classList.toggle("open");
+});
+
+function scrollToMap() {
+  window.location.href = "oneprac.html";
+}
+</script>
+
+</body>
+</html>

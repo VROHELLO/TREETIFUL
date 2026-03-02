@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TREENITY</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+:root {
+  --sage: #779a51;
+  --sage-dark: #688255;
+  --gold: #c9a44c;
+  --white: #ffffff;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.75);
+  z-index: -1;    
+  pointer-events: none;
+}
+ .search { position: absolute; top: 50px; right: 10px; background: white; padding: 5px; border-radius: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.3); z-index: 1001; }
+
+@keyframes fadeInBg {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+h1 {
+  background: linear-gradient(135deg, var(--sage), var(--sage-dark));
+  color: #1c542b;
+  padding: 30px;
+  margin: 0;
+  text-align: center;
+  border-bottom: 7px solid var(--gold);
+}
+
+body {
+  margin: 0;
+  font-family: "Times New Roman", serif;
+  background-color: rgba(100, 175, 75, 0.532);
+  background-size: cover;
+  animation: fadeInBg 1s ease-in-out forwards;
+  opacity: 1;
+}
+
+#sideMenu {
+  position: fixed;
+  margin-top:40px;
+  top: 0;  
+  left: -260px; 
+  width: 260px;
+  height: 100%;
+  background:linear-gradient(135deg, var(--sage), var(--sage-dark));
+  color: white;
+  padding: 20px;
+  transition: left 0.4s ease;
+  z-index: 99999;
+  overflow-y: auto;
+}
+#sideMenu.open { left: 0; }
+
+#menuBtn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 55px;
+  height: 55px;
+  font-size: 32px;
+  font-weight: bold;
+  background: #779a51;
+  color: #c9a44c;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  z-index: 100000;
+}
+#menuBtn:hover {
+  box-shadow: 0 0 10px rgba(201, 164, 76, 0.8), 0 0 20px rgba(201, 164, 76, 0.6), 0 0 30px rgba(201, 164, 76, 0.4);
+  transform: scale(1.05);
+}
+
+#tut-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 100001;
+}
+
+#tut-card {
+    position: fixed;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    width: 280px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    z-index: 100002;
+    transition: all 0.3s ease-out;
+}
+
+#tut-bird {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 150px;
+    height: auto;
+    z-index: 100003;
+    display: none;
+    filter: drop-shadow(0 5px 10px rgba(0,0,0,0.4));
+}
+
+.tut-highlight {
+    position: relative;
+    z-index: 100004 !important;
+    outline: 5px solid var(--gold);
+    box-shadow: 0 0 25px var(--gold);
+    pointer-events: none;
+}
+
+#tut-next-btn {
+    background: var(--sage);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    float: right;
+    font-weight: bold;
+}
+
+.menu-item {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: rgb(255, 255, 255);
+  text-align: left;
+  padding: 12px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.menu-item:hover { background: rgba(255,255,255,0.25); }
+
+#map {
+  width: 90%;
+  height: 600px;
+  margin: 30px auto;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(218, 167, 64, 0.34);
+}
+.follow-control { background: white; padding: 8px; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; cursor: pointer; font-weight: bold; color: var(--sage-dark); }
+#inventoryList { margin-top: 15px; max-height: 70vh; overflow-y: auto; }
+</style>
+</head>
+
+<body>
+
+<div id="tut-overlay"></div>
+
+<img src="BIRD.png" id="tut-bird" alt="Guide Character">
+
+<div id="tut-card" style="display:none;">
+    <h3 id="tut-title" style="margin-top:0; color:var(--sage-dark);">Welcome!</h3>
+    <p id="tut-text" style="font-size:14px; color:#444; line-height:1.4;"></p>
+    <div style="margin-top:15px; overflow:hidden;">
+        <span id="tut-step" style="font-size:12px; color:gray;"></span>
+        <button id="tut-next-btn">Next</button>
+    </div>
+</div>
+
+<button id="menuBtn">☰</button>
+
+<div id="sideMenu">
+  <h3>🌿 Menu 🌿</h3>
+  <a href="onetwo.html" class="menu-item" style="display:block; text-decoration:none;">🌳 Tree Inventory 🌳</a>
+  <button class="menu-item" onclick="startTutorial()">📖 How to use Map</button>
+  <div id="inventoryList"></div>
+</div>
+
+<h1> 🌱 Treenity: Tree Inventory Map 🌱</h1>
+
+<div id="map"></div>
+
+<div class="loader"></div>
+<div class="search" id="searchContainer">
+    <input type="text" id="latlng-input" placeholder="Latitude,Longitude">
+    <button id="search-btn">Search</button>
+</div>
+
+<script>
+window.addEventListener("load", function () {
+  const loader = document.querySelector(".loader");
+  if (loader) loader.style.display = "none";
+  
+  if(!localStorage.getItem('treenity_visited')) {
+      setTimeout(startTutorial, 1500);
+      localStorage.setItem('treenity_visited', 'true');
+  }
+  loadSavedMarkers();
+});
+
+const map = L.map('map').setView([51.505, -0.09], 13);
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' });
+const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri' });
+osm.addTo(map);
+L.control.layers({"Street Map": osm, "Satellite": satellite}).addTo(map);
+
+const usagiIcon = L.icon({ iconUrl: 'BIRD.png', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] });
+
+function saveMarkerToStorage(markerObj) {
+    let saved = JSON.parse(localStorage.getItem('treenity_markers')) || [];
+    saved.push(markerObj);
+    localStorage.setItem('treenity_markers', JSON.stringify(saved));
+}
+function removeMarkerFromStorage(lat, lng) {
+    let saved = JSON.parse(localStorage.getItem('treenity_markers')) || [];
+    saved = saved.filter(m => m.lat !== lat && m.lng !== lng);
+    localStorage.setItem('treenity_markers', JSON.stringify(saved));
+}
+function loadSavedMarkers() {
+    let saved = JSON.parse(localStorage.getItem('treenity_markers')) || [];
+    saved.forEach(data => {
+        createMarker({lat: data.lat, lng: data.lng}, data.label, data.condition, false);
+    });
+}
+
+let isFollowing = true;
+const followControl = L.control({ position: 'topright' });
+followControl.onAdd = function() {
+    let div = L.DomUtil.create('div', 'follow-control-wrapper');
+    div.innerHTML = '<button id="followToggle" class="follow-control">📍 Follow: ON</button>';
+    return div;
+};
+followControl.addTo(map);
+document.addEventListener('click', function(e){
+    if(e.target && e.target.id == 'followToggle'){
+        isFollowing = !isFollowing;
+        e.target.innerText = isFollowing ? "📍 Follow: ON" : "📍 Follow: OFF";
+        e.target.style.color = isFollowing ? "var(--sage-dark)" : "#cc0000";
+    }
+});
+
+let liveMarker, accuracyCircle;
+if ("geolocation" in navigator) {
+    navigator.geolocation.watchPosition(position => {
+        const lat = position.coords.latitude, lon = position.coords.longitude, accuracy = position.coords.accuracy;
+        if (!liveMarker) {
+            liveMarker = L.marker([lat, lon], { icon: usagiIcon }).addTo(map).bindTooltip("You",{permanent:true,direction:"top"}).openTooltip();
+            accuracyCircle = L.circle([lat, lon], { radius: accuracy, color: '#1e90ff', fillColor: '#1e90ff', fillOpacity: 0.15 }).addTo(map);
+            map.setView([lat, lon], 17); 
+        } else { liveMarker.setLatLng([lat, lon]); accuracyCircle.setLatLng([lat, lon]).setRadius(accuracy); }
+        if (isFollowing) { map.panTo([lat, lon], { animate: true }); }
+    }, error => { console.error(error); }, { enableHighAccuracy:true, maximumAge:0, timeout:10000 });
+}
+
+const tutorialSteps = [
+    { title: "Welcome to Treenity! 🌿", text: "Hello! I'm your guide for today. Let me show you around your new Tree Inventory Map.", target: null },
+    { title: "Navigation Menu", text: "You can find your tree records and quick links right here in the menu.", target: "menuBtn" },
+    { title: "Interactive Mapping", text: "Just click anywhere on the map! You'll be asked for the tree's name and condition to add it to the inventory.", target: "map" },
+    { title: "Quick Location Search", text: "If you know specific Lat/Lng coordinates, paste them here and click Search to jump to that spot.", target: "searchContainer" },
+    { title: "All set! 🌱", text: "You're ready to start exploring and contributing to our school campus trees. Let's grow!", target: null }
+];
+
+let currentStep = 0;
+const overlay = document.getElementById('tut-overlay');
+const card = document.getElementById('tut-card');
+const bird = document.getElementById('tut-bird');
+
+function startTutorial() {
+    currentStep = 0;
+    document.getElementById('sideMenu').classList.remove('open');
+    overlay.style.display = 'block';
+    card.style.display = 'block';
+    bird.style.display = 'block';
+    showStep();
+}
+
+function showStep() {
+    const step = tutorialSteps[currentStep];
+    document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+    document.getElementById('tut-title').innerText = step.title;
+    document.getElementById('tut-text').innerText = step.text;
+    document.getElementById('tut-step').innerText = `Step ${currentStep + 1} of ${tutorialSteps.length}`;
+    document.getElementById('tut-next-btn').innerText = currentStep === tutorialSteps.length -1 ? "Start Mapping!" : "Next";
+
+    if (step.target) {
+        const targetEl = document.getElementById(step.target);
+        targetEl.classList.add('tut-highlight');
+        const rect = targetEl.getBoundingClientRect();
+        card.style.top = (rect.top + window.scrollY + rect.height + 15) + "px";
+        card.style.left = Math.max(10, rect.left) + "px";
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        card.style.top = "50%"; card.style.left = "50%"; card.style.transform = "translate(-50%, -50%)";
+    }
+}
+
+document.getElementById('tut-next-btn').onclick = () => {
+    currentStep++;
+    if (currentStep < tutorialSteps.length) {
+        card.style.transform = "none";
+        showStep();
+    } else {
+        overlay.style.display = 'none';
+        card.style.display = 'none';
+        bird.style.display = 'none';
+        document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+    }
+};
+
+function createMarker(latlng, label, condition, isNew = true) {
+    const marker = L.marker(latlng, { icon: usagiIcon }).addTo(map).bindPopup(`<b>${label}</b><br>Condition: ${condition}<br>Lat: ${latlng.lat.toFixed(6)}<br>Lng: ${latlng.lng.toFixed(6)}`);
+    if (isNew) { saveMarkerToStorage({ lat: latlng.lat, lng: latlng.lng, label: label, condition: condition }); }
+    marker.on('contextmenu', () => { removeMarkerFromStorage(latlng.lat, latlng.lng); map.removeLayer(marker); });
+    marker.openPopup();
+}
+map.on('click', e => { 
+    const label = prompt("Enter marker label:"); 
+    if (!label) return; 
+    const condition = prompt("Enter tree condition:\nHealthy / Fair / Poor / Damaged");
+    if (!condition) return;
+    createMarker(e.latlng, label, condition);
+});
+document.getElementById('search-btn').addEventListener('click', () => {
+    const input = document.getElementById('latlng-input').value.trim();
+    if(!input){ alert("Please Enter Coordinates"); return; }
+    const parts = input.split(',');
+    if(parts.length!==2){ alert("Please enter both Latitude and Longitude separated by a comma."); return; }
+    const lat=parseFloat(parts[0]), lng=parseFloat(parts[1]);
+    if(isNaN(lat)||isNaN(lng)){ alert("Invalid Latitude or Longitude"); return; }
+    L.marker([lat,lng], {icon: usagiIcon}).addTo(map).bindPopup(`Marker<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`).openPopup();
+});
+const menuBtn = document.getElementById("menuBtn");
+const sideMenu = document.getElementById("sideMenu");
+menuBtn.addEventListener("click", () => { sideMenu.classList.toggle("open"); });
+</script>
+</body>
+</html>
