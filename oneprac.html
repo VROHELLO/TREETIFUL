@@ -80,10 +80,6 @@ body {
   cursor: pointer;
   z-index: 100000;
 }
-#menuBtn:hover {
-  box-shadow: 0 0 10px rgba(201, 164, 76, 0.8), 0 0 20px rgba(201, 164, 76, 0.6), 0 0 30px rgba(201, 164, 76, 0.4);
-  transform: scale(1.05);
-}
 
 #tut-overlay {
     display: none;
@@ -100,8 +96,10 @@ body {
     border-radius: 15px;
     width: 280px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    z-index: 100002;
-    transition: all 0.3s ease-out;
+    z-index: 100009; 
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 #tut-bird {
@@ -110,24 +108,30 @@ body {
     right: 20px;
     width: 150px;
     height: auto;
-    z-index: 100003;
+    z-index: 100010;
     display: none;
     filter: drop-shadow(0 5px 10px rgba(0,0,0,0.4));
 }
 
 .tut-highlight {
+    position: relative !important;
+    z-index: 100005 !important;
+    outline: 8px solid var(--gold);
+    box-shadow: 0 0 30px var(--gold);
+    pointer-events: none; 
+}
+
+/* Forces the Telegram chat button to show through the tutorial overlay */
+#chat-container {
     position: relative;
-    z-index: 100004 !important;
-    outline: 5px solid var(--gold);
-    box-shadow: 0 0 25px var(--gold);
-    pointer-events: none;
+    z-index: 100006;
 }
 
 #tut-next-btn {
     background: var(--sage);
     color: white;
     border: none;
-    padding: 8px 15px;
+    padding: 10px 20px;
     border-radius: 5px;
     cursor: pointer;
     float: right;
@@ -145,7 +149,6 @@ body {
   cursor: pointer;
   border-radius: 8px;
 }
-.menu-item:hover { background: rgba(255,255,255,0.25); }
 
 #map {
   width: 90%;
@@ -172,6 +175,11 @@ body {
         <span id="tut-step" style="font-size:12px; color:gray;"></span>
         <button id="tut-next-btn">Next</button>
     </div>
+</div>
+
+<div id="chat-container">
+    <script src="https://elfsightcdn.com/platform.js" async></script>
+    <div class="elfsight-app-c4f367b4-d8f8-400b-9861-8d5bda1a9d25" data-elfsight-app-lazy></div>
 </div>
 
 <button id="menuBtn">☰</button>
@@ -259,11 +267,13 @@ if ("geolocation" in navigator) {
     }, error => { console.error(error); }, { enableHighAccuracy:true, maximumAge:0, timeout:10000 });
 }
 
+// Added the Telegram Support step here!
 const tutorialSteps = [
     { title: "Welcome to Treenity! 🌿", text: "Hello! I'm your guide for today. Let me show you around your new Tree Inventory Map.", target: null },
     { title: "Navigation Menu", text: "You can find your tree records and quick links right here in the menu.", target: "menuBtn" },
     { title: "Interactive Mapping", text: "Just click anywhere on the map! You'll be asked for the tree's name and condition to add it to the inventory.", target: "map" },
     { title: "Quick Location Search", text: "If you know specific Lat/Lng coordinates, paste them here and click Search to jump to that spot.", target: "searchContainer" },
+    { title: "Need Help? 💬", text: "If you run into issues or have questions, you can reach out via Telegram support right here!", target: "chat-container" },
     { title: "All set! 🌱", text: "You're ready to start exploring and contributing to our school campus trees. Let's grow!", target: null }
 ];
 
@@ -292,19 +302,14 @@ function showStep() {
     if (step.target) {
         const targetEl = document.getElementById(step.target);
         targetEl.classList.add('tut-highlight');
-        const rect = targetEl.getBoundingClientRect();
-        card.style.top = (rect.top + window.scrollY + rect.height + 15) + "px";
-        card.style.left = Math.max(10, rect.left) + "px";
         targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } else {
-        card.style.top = "50%"; card.style.left = "50%"; card.style.transform = "translate(-50%, -50%)";
     }
 }
 
-document.getElementById('tut-next-btn').onclick = () => {
+document.getElementById('tut-next-btn').onclick = (e) => {
+    e.stopPropagation(); 
     currentStep++;
     if (currentStep < tutorialSteps.length) {
-        card.style.transform = "none";
         showStep();
     } else {
         overlay.style.display = 'none';
@@ -321,6 +326,7 @@ function createMarker(latlng, label, condition, isNew = true) {
     marker.openPopup();
 }
 map.on('click', e => { 
+    if(overlay.style.display === 'block') return; 
     const label = prompt("Enter marker label:"); 
     if (!label) return; 
     const condition = prompt("Enter tree condition:\nHealthy / Fair / Poor / Damaged");
