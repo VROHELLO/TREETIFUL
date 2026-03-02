@@ -332,6 +332,20 @@ map.on('click', e => {
     const condition = prompt("Enter tree condition:\nHealthy / Fair / Poor / Damaged");
     if (!condition) return;
     createMarker(e.latlng, label, condition);
+
+        fetch("https://script.google.com/macros/s/AKfycbzTBKUGVSIOSfNI_8ZxGk5-H69ZWyfLN1wLI5wXniA3SjFyHxKjf88ddvefhT9MQ7AL/exec", {
+        method: "POST",
+        body: new URLSearchParams({
+            count: 1,
+            type: label,
+            condition: condition,
+            lat: e.latlng.lat,
+            lng: e.latlng.lng
+        })
+    })
+    .then(res => res.json())
+    .then(data => console.log("Saved:", data))
+    .catch(err => console.error("Error:", err));
 });
 document.getElementById('search-btn').addEventListener('click', () => {
     const input = document.getElementById('latlng-input').value.trim();
