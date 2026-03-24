@@ -10,7 +10,7 @@
 
 <style>
 :root {
-  --sage: #829875; /* FIXED HEX */
+  --sage: #829875;
   --sage-dark: #688255;
   --gold: #c9a44c;
   --white: #ffffff;
@@ -149,7 +149,6 @@ body {
   border-radius: 8px;
 }
 
-/* Updated Map Style to fill container */
 #map {
   width: 100%;
   height: 600px;
@@ -166,7 +165,6 @@ body {
 <body>
 
 <div id="tut-overlay"></div>
-
 <img src="BIRD.png" id="tut-bird" alt="Guide Character">
 
 <div id="tut-card" style="display:none;">
@@ -196,7 +194,7 @@ body {
 
 <div style="position: relative; width: 90%; margin: 30px auto;">
     <div id="map"></div>
-    <button style="position: absolute; top: 10px; right: 10px; z-index: 1002; font-size:18px; background-color:#829875; color: white; border: 2px solid var(--gold); border-radius:10px; cursor:pointer; padding: 10px;" onclick="dropPinAtCurrentLocation()"> Click me </button>
+    <button style="position: absolute; bottom: 20px; right: 20px; z-index: 1002; font-size:18px; background-color:#829875; color: white; border: 2px solid var(--gold); border-radius:10px; cursor:pointer; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);" onclick="dropPinAtCurrentLocation()"> Click to Pin </button>
 </div>
 
 <div class="loader"></div>
@@ -206,7 +204,6 @@ body {
 </div>
 
 <script>
-// Keep track of user location globally
 let userCoords = null;
 
 window.addEventListener("load", function () {
@@ -228,7 +225,6 @@ L.control.layers({"Street Map": osm, "Satellite": satellite}).addTo(map);
 
 const usagiIcon = L.icon({ iconUrl: 'BIRD.png', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] });
 
-// BUTTON LOGIC
 function dropPinAtCurrentLocation() {
     if (userCoords) {
         const name = prompt("Tree Name:");
@@ -244,11 +240,14 @@ function saveMarkerToStorage(markerObj) {
     saved.push(markerObj);
     localStorage.setItem('treenity_markers', JSON.stringify(saved));
 }
+
 function removeMarkerFromStorage(lat, lng) {
     let saved = JSON.parse(localStorage.getItem('treenity_markers')) || [];
-    saved = saved.filter(m => m.lat !== lat && m.lng !== lng);
+    // Use a small epsilon for float comparison to be safe
+    saved = saved.filter(m => Math.abs(m.lat - lat) > 0.000001 || Math.abs(m.lng - lng) > 0.000001);
     localStorage.setItem('treenity_markers', JSON.stringify(saved));
 }
+
 function loadSavedMarkers() {
     let saved = JSON.parse(localStorage.getItem('treenity_markers')) || [];
     saved.forEach(data => {
@@ -256,6 +255,26 @@ function loadSavedMarkers() {
     });
 }
 
+// Updated createMarker to handle Right Click and Long Press
+function createMarker(latlng, label, condition, isNew = true) {
+    const marker = L.marker(latlng, { icon: usagiIcon }).addTo(map).bindPopup(`<b>${label}</b><br>Condition: ${condition}<br>Lat: ${latlng.lat.toFixed(6)}<br>Lng: ${latlng.lng.toFixed(6)}`);
+    
+    if (isNew) { 
+        saveMarkerToStorage({ lat: latlng.lat, lng: latlng.lng, label: label, condition: condition }); 
+    }
+
+    // Handles Right Click (Desktop) and Long Press (Mobile)
+    marker.on('contextmenu', (e) => {
+        if (confirm(`Do you want to delete the tree: "${label}"?`)) {
+            removeMarkerFromStorage(latlng.lat, latlng.lng);
+            map.removeLayer(marker);
+        }
+    });
+
+    marker.openPopup();
+}
+
+// Tutorial Logic
 const tutorialSteps = [
     { title: "Welcome to Treenity! 🌿", text: "Hello! I'm your guide for today. Let me show you around your new Tree Inventory Map.", target: null },
     { title: "Navigation Menu", text: "You can find your tree records and quick links right here in the menu.", target: "menuBtn" },
@@ -307,13 +326,6 @@ document.getElementById('tut-next-btn').onclick = (e) => {
     }
 };
 
-function createMarker(latlng, label, condition, isNew = true) {
-    const marker = L.marker(latlng, { icon: usagiIcon }).addTo(map).bindPopup(`<b>${label}</b><br>Condition: ${condition}<br>Lat: ${latlng.lat.toFixed(6)}<br>Lng: ${latlng.lng.toFixed(6)}`);
-    if (isNew) { saveMarkerToStorage({ lat: latlng.lat, lng: latlng.lng, label: label, condition: condition }); }
-    marker.on('contextmenu', () => { removeMarkerFromStorage(latlng.lat, latlng.lng); map.removeLayer(marker); });
-    marker.openPopup();
-}
-
 document.getElementById('search-btn').addEventListener('click', () => {
     const input = document.getElementById('latlng-input').value.trim();
     if(!input){ alert("Please Enter Coordinates"); return; }
@@ -323,28 +335,28 @@ document.getElementById('search-btn').addEventListener('click', () => {
     if(isNaN(lat)||isNaN(lng)){ alert("Invalid Latitude or Longitude"); return; }
     L.marker([lat,lng], {icon: usagiIcon}).addTo(map).bindPopup(`Marker<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`).openPopup();
 });
+
 const menuBtn = document.getElementById("menuBtn");
 const sideMenu = document.getElementById("sideMenu");
 menuBtn.addEventListener("click", () => { sideMenu.classList.toggle("open"); });
 
+// Location Logic
 navigator.geolocation.watchPosition(success, error);
-
-let marker, circle;
+let locationMarker, locationCircle;
 
 function success(pos) {
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
     const accuracy = pos.coords.accuracy;
-
     userCoords = { lat, lng };
 
-    if (marker) {
-      map.removeLayer(marker);
-      map.removeLayer(circle);
+    if (locationMarker) {
+      map.removeLayer(locationMarker);
+      map.removeLayer(locationCircle);
     }
-    marker = L.marker([lat, lng]).addTo(map);
-    circle = L.circle([lat, lng], { radius: accuracy }).addTo(map);
-    map.fitBounds(circle.getBounds());
+    locationMarker = L.marker([lat, lng]).addTo(map);
+    locationCircle = L.circle([lat, lng], { radius: accuracy }).addTo(map);
+    map.fitBounds(locationCircle.getBounds());
     map.setView([lat, lng], 20);
 }
 
@@ -355,7 +367,6 @@ function error(err) {
     alert("Cannot get current location");
   }
 }
-
 </script>
 </body>
 </html>
