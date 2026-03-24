@@ -10,7 +10,7 @@
 
 <style>
 :root {
-  --sage: #779a51;
+  --sage: #829875; /* FIXED HEX */
   --sage-dark: #688255;
   --gold: #c9a44c;
   --white: #ffffff;
@@ -121,7 +121,6 @@ body {
     pointer-events: none; 
 }
 
-/* Forces the Telegram chat button to show through the tutorial overlay */
 #chat-container {
     position: relative;
     z-index: 100006;
@@ -150,15 +149,17 @@ body {
   border-radius: 8px;
 }
 
+/* Updated Map Style to fill container */
 #map {
-  width: 90%;
+  width: 100%;
   height: 600px;
-  margin: 30px auto;
+  margin: 0;
   border-radius: 20px;
   box-shadow: 0 10px 25px rgba(218, 167, 64, 0.34);
 }
 .follow-control { background: white; padding: 8px; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; cursor: pointer; font-weight: bold; color: var(--sage-dark); }
 #inventoryList { margin-top: 15px; max-height: 70vh; overflow-y: auto; }
+
 </style>
 </head>
 
@@ -193,7 +194,10 @@ body {
 
 <h1> 🌱 Treenity: Tree Inventory Map 🌱</h1>
 
-<div id="map"></div>
+<div style="position: relative; width: 90%; margin: 30px auto;">
+    <div id="map"></div>
+    <button style="position: absolute; top: 10px; right: 10px; z-index: 1002; font-size:18px; background-color:#829875; color: white; border: 2px solid var(--gold); border-radius:10px; cursor:pointer; padding: 10px;" onclick="dropPinAtCurrentLocation()"> Click me </button>
+</div>
 
 <div class="loader"></div>
 <div class="search" id="searchContainer">
@@ -202,6 +206,9 @@ body {
 </div>
 
 <script>
+// Keep track of user location globally
+let userCoords = null;
+
 window.addEventListener("load", function () {
   const loader = document.querySelector(".loader");
   if (loader) loader.style.display = "none";
@@ -221,6 +228,17 @@ L.control.layers({"Street Map": osm, "Satellite": satellite}).addTo(map);
 
 const usagiIcon = L.icon({ iconUrl: 'BIRD.png', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] });
 
+// BUTTON LOGIC
+function dropPinAtCurrentLocation() {
+    if (userCoords) {
+        const name = prompt("Tree Name:");
+        const cond = prompt("Condition:");
+        if (name) createMarker(userCoords, name, cond);
+    } else {
+        alert("Location not found yet.");
+    }
+}
+
 function saveMarkerToStorage(markerObj) {
     let saved = JSON.parse(localStorage.getItem('treenity_markers')) || [];
     saved.push(markerObj);
@@ -238,36 +256,6 @@ function loadSavedMarkers() {
     });
 }
 
-let isFollowing = true;
-const followControl = L.control({ position: 'topright' });
-followControl.onAdd = function() {
-    let div = L.DomUtil.create('div', 'follow-control-wrapper');
-    div.innerHTML = '<button id="followToggle" class="follow-control">📍 Follow: ON</button>';
-    return div;
-};
-followControl.addTo(map);
-document.addEventListener('click', function(e){
-    if(e.target && e.target.id == 'followToggle'){
-        isFollowing = !isFollowing;
-        e.target.innerText = isFollowing ? "📍 Follow: ON" : "📍 Follow: OFF";
-        e.target.style.color = isFollowing ? "var(--sage-dark)" : "#cc0000";
-    }
-});
-
-let liveMarker, accuracyCircle;
-if ("geolocation" in navigator) {
-    navigator.geolocation.watchPosition(position => {
-        const lat = position.coords.latitude, lon = position.coords.longitude, accuracy = position.coords.accuracy;
-        if (!liveMarker) {
-            liveMarker = L.marker([lat, lon], { icon: usagiIcon }).addTo(map).bindTooltip("You",{permanent:true,direction:"top"}).openTooltip();
-            accuracyCircle = L.circle([lat, lon], { radius: accuracy, color: '#1e90ff', fillColor: '#1e90ff', fillOpacity: 0.15 }).addTo(map);
-            map.setView([lat, lon], 17); 
-        } else { liveMarker.setLatLng([lat, lon]); accuracyCircle.setLatLng([lat, lon]).setRadius(accuracy); }
-        if (isFollowing) { map.panTo([lat, lon], { animate: true }); }
-    }, error => { console.error(error); }, { enableHighAccuracy:true, maximumAge:0, timeout:10000 });
-}
-
-// Added the Telegram Support step here!
 const tutorialSteps = [
     { title: "Welcome to Treenity! 🌿", text: "Hello! I'm your guide for today. Let me show you around your new Tree Inventory Map.", target: null },
     { title: "Navigation Menu", text: "You can find your tree records and quick links right here in the menu.", target: "menuBtn" },
@@ -325,28 +313,7 @@ function createMarker(latlng, label, condition, isNew = true) {
     marker.on('contextmenu', () => { removeMarkerFromStorage(latlng.lat, latlng.lng); map.removeLayer(marker); });
     marker.openPopup();
 }
-map.on('click', e => { 
-    if(overlay.style.display === 'block') return; 
-    const label = prompt("Enter marker label:"); 
-    if (!label) return; 
-    const condition = prompt("Enter tree condition:\nHealthy / Fair / Poor / Damaged");
-    if (!condition) return;
-    createMarker(e.latlng, label, condition);
 
-        fetch("https://script.google.com/macros/s/AKfycbzTBKUGVSIOSfNI_8ZxGk5-H69ZWyfLN1wLI5wXniA3SjFyHxKjf88ddvefhT9MQ7AL/exec", {
-        method: "POST",
-        body: new URLSearchParams({
-            count: 1,
-            type: label,
-            condition: condition,
-            lat: e.latlng.lat,
-            lng: e.latlng.lng
-        })
-    })
-    .then(res => res.json())
-    .then(data => console.log("Saved:", data))
-    .catch(err => console.error("Error:", err));
-});
 document.getElementById('search-btn').addEventListener('click', () => {
     const input = document.getElementById('latlng-input').value.trim();
     if(!input){ alert("Please Enter Coordinates"); return; }
@@ -359,6 +326,36 @@ document.getElementById('search-btn').addEventListener('click', () => {
 const menuBtn = document.getElementById("menuBtn");
 const sideMenu = document.getElementById("sideMenu");
 menuBtn.addEventListener("click", () => { sideMenu.classList.toggle("open"); });
+
+navigator.geolocation.watchPosition(success, error);
+
+let marker, circle;
+
+function success(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const accuracy = pos.coords.accuracy;
+
+    userCoords = { lat, lng };
+
+    if (marker) {
+      map.removeLayer(marker);
+      map.removeLayer(circle);
+    }
+    marker = L.marker([lat, lng]).addTo(map);
+    circle = L.circle([lat, lng], { radius: accuracy }).addTo(map);
+    map.fitBounds(circle.getBounds());
+    map.setView([lat, lng], 20);
+}
+
+function error(err) {
+  if (err.code === 1) {
+    alert("Please allow geolocation access");
+  } else {
+    alert("Cannot get current location");
+  }
+}
+
 </script>
 </body>
 </html>
