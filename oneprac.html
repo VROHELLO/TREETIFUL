@@ -306,6 +306,9 @@ function showStep() {
     }
 }
 
+map.on('click', e => { const label = prompt("Enter marker label:"); if (!label) return; createMarker(e.latlng, label); });
+
+
 document.getElementById('tut-next-btn').onclick = (e) => {
     e.stopPropagation(); 
     currentStep++;
